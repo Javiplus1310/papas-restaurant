@@ -51,7 +51,9 @@ export default function CarritoPage() {
         throw new Error(data.error || "Error al crear la orden");
       }
 
-      window.location.href = data.url;
+      const paymentUrl = data.url || data.redirect;
+      if (!paymentUrl) throw new Error("Flow no devolvió URL de pago");
+      window.location.href = paymentUrl;
 
     } catch (err: any) {
       console.error("Error en checkout:", err);
