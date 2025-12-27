@@ -17,11 +17,11 @@ function sign(params: Record<string, string>) {
 
 export async function POST(req: Request) {
   try {
-    const { amount, orderId, subject } = await req.json();
+    const { amount, orderId, subject, email } = await req.json();
 
-    if (!amount || !orderId || !subject) {
+    if (!amount || !orderId || !subject || !email) {
       return NextResponse.json(
-        { error: "Faltan parámetros (amount, orderId, subject)" },
+        { error: "Faltan parámetros (amount, orderId, subject, email)" },
         { status: 400 }
       );
     }
@@ -32,6 +32,7 @@ export async function POST(req: Request) {
       amount: amount.toString(),
       commerceOrder: orderId,
       subject,
+      email,
       urlConfirmation: `${baseUrl}/api/flow/confirm`,
       urlReturn: `${baseUrl}/confirmacion`
     };

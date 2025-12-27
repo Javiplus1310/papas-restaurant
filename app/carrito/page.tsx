@@ -39,7 +39,8 @@ export default function CarritoPage() {
         body: JSON.stringify({
           amount: total,
           orderId,
-          subject: subject.substring(0, 140)
+          subject: subject.substring(0, 140),
+          email: "javidx_13@hotmail.cl"
         }),
       });
 
