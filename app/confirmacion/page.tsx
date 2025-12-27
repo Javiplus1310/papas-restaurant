@@ -1,24 +1,29 @@
 "use client";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 
-export default function ConfirmacionPage() {
+function ConfirmacionContent() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [orderInfo, setOrderInfo] = useState<any>(null);
+  const [errorDetails, setErrorDetails] = useState<string>("");
 
   useEffect(() => {
     const token = searchParams.get("token");
     
+    console.log("Token recibido:", token);
+    
     if (!token) {
       setStatus("error");
+      setErrorDetails("No se recibió token de Flow");
       return;
     }
 
-    // Verificar el estado del pago
     async function verifyPayment() {
       try {
+        console.log("Verificando pago con token:", token);
+        
         const response = await fetch("/api/flow/confirm", {
           method: "POST",
           headers: {
@@ -28,22 +33,32 @@ export default function ConfirmacionPage() {
         });
 
         const data = await response.json();
+        
+        console.log("Respuesta de confirmación:", data);
 
-        if (data.success && data.status === 2) {
-          // status 2 = Pagado
-          setStatus("success");
-          setOrderInfo(data);
-          
-          // Limpiar el carrito del localStorage
-          if (typeof window !== "undefined") {
-            localStorage.removeItem("cart_v1");
+        if (data.success) {
+          if (data.status === 2) {
+            // Pagado
+            setStatus("success");
+            setOrderInfo(data);
+            
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("cart_v1");
+            }
+          } else if (data.status === 1) {
+            setTimeout(() => verifyPayment(), 2000);
+          } else {
+            setStatus("error");
+            setErrorDetails(`Pago con estado: ${data.status} (Rechazado o anulado)`);
           }
         } else {
           setStatus("error");
+          setErrorDetails(data.error || "Error desconocido al confirmar");
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error al verificar pago:", error);
         setStatus("error");
+        setErrorDetails(error.message || "Error desconocido");
       }
     }
 
@@ -68,9 +83,14 @@ export default function ConfirmacionPage() {
         <div className="bg-red-500/10 border border-red-500 rounded-xl p-8">
           <div className="text-5xl mb-4">❌</div>
           <h1 className="text-2xl font-bold mb-2 text-red-500">Error en el pago</h1>
-          <p className="text-gray-300 mb-6">
+          <p className="text-gray-300 mb-2">
             Hubo un problema al procesar tu pago. Por favor, intenta nuevamente.
           </p>
+          {errorDetails && (
+            <p className="text-sm text-gray-400 mb-6 font-mono bg-black/30 p-3 rounded">
+              {errorDetails}
+            </p>
+          )}
           <div className="flex gap-3 justify-center">
             <Link href="/carrito" className="bg-brand px-6 py-3 rounded-md text-white">
               Volver al carrito
@@ -115,5 +135,20 @@ export default function ConfirmacionPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ConfirmacionPage() {
+  return (
+    <Suspense fallback={
+      <main className="max-w-2xl mx-auto px-4 py-12 pt-28 text-center">
+        <div className="animate-pulse">
+          <div className="w-16 h-16 bg-accent/20 rounded-full mx-auto mb-4"></div>
+          <h1 className="text-2xl font-bold mb-2">Cargando...</h1>
+        </div>
+      </main>
+    }>
+      <ConfirmacionContent />
+    </Suspense>
   );
 }
