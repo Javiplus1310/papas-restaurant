@@ -3,6 +3,7 @@ import crypto from "crypto";
 
 export async function GET(req: NextRequest) {
     const token = req.nextUrl.searchParams.get("token");
+    console.log("🔍 Verificando pago - Token:", token);
     
     if (!token) {
         return NextResponse.json({ error: "Falta token" }, { status: 400 });
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
 
     const data = await resp.json();
 
-    console.log("Estado del pago desde Flow:", data);
+    console.log("📦 Respuesta de Flow:", data);
 
     if (!resp.ok) {
         return NextResponse.json(
