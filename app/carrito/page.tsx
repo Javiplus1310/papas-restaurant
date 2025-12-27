@@ -30,13 +30,8 @@ export default function CarritoPage() {
     setError("");
 
     try {
-      // Generar ID único para la orden
       const orderId = `ORDER-${Date.now()}`;
-      
-      // Crear descripción del pedido
       const subject = cart.map((p: CartItem) => `${p.name} x${p.qty}`).join(", ");
-
-      // Llamar a nuestro endpoint
       const response = await fetch("/api/flow/create-order", {
         method: "POST",
         headers: {
@@ -45,8 +40,8 @@ export default function CarritoPage() {
         body: JSON.stringify({
           amount: total,
           orderId,
-          subject: subject.substring(0, 140), // Flow limita a 140 caracteres
-          email: "javidx_13@hotmail.cl", // Email obligatorio para Flow
+          subject: subject.substring(0, 140), 
+          email: "javidx_13@hotmail.cl", 
         }),
       });
 
@@ -56,9 +51,7 @@ export default function CarritoPage() {
         throw new Error(data.error || "Error al crear la orden");
       }
 
-      // Redirigir a Flow para el pago
-      const paymentUrl = `${data.url}?token=${data.token}`;
-      window.location.href = paymentUrl;
+      window.location.href = data.url;
 
     } catch (err: any) {
       console.error("Error en checkout:", err);
