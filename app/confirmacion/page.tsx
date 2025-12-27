@@ -19,9 +19,9 @@ function ConfirmacionContent() {
         if (error) {
             setStatus("error");
             setErrorDetails(
-            error === "no-token" 
-                ? "El token no llegó desde Flow" 
-                : "Error del servidor"
+                error === "no-token" 
+                    ? "El token no llegó desde Flow" 
+                    : "Error del servidor"
             );
             return;
         }
@@ -34,27 +34,51 @@ function ConfirmacionContent() {
 
         async function verificar() {
             try {
+                // Corregido: paréntesis en lugar de backticks
                 const res = await fetch(`/api/flow/confirm?token=${token}`);
                 const data = await res.json();
-
+                
                 console.log("🧾 Respuesta backend:", data);
 
-                if (!data.success) throw new Error(data.error);
+                if (!res.ok) {
+                    setStatus("error");
+                    setErrorDetails(data.error || "Error al verificar el pago");
+                    return;
+                }
 
-                if (data.status === 2) {
+                // Flow status: 1=Pendiente, 2=Pagado, 3=Rechazado, 4=Anulado
+                const paymentStatus = data.status || data.data?.status;
+
+                console.log("📊 Estado del pago:", paymentStatus);
+
+                if (paymentStatus === 2) {
+                    // Pagado
                     setStatus("success");
-                    setOrderInfo(data);
-                    localStorage.removeItem("cart_v1");
-                } else if (data.status === 1) {
-                    setTimeout(verificar, 2000);
+                    setOrderInfo({
+                        commerceOrder: data.commerceOrder || data.data?.commerceOrder,
+                        amount: data.amount || data.data?.amount,
+                    });
+                    
+                    // Limpiar el carrito
+                    if (typeof window !== "undefined") {
+                        localStorage.removeItem("cart_v1");
+                    }
+                } else if (paymentStatus === 1) {
+                    // Pendiente - reintentar
+                    console.log("⏳ Pago pendiente, reintentando...");
+                    setTimeout(() => verificar(), 2000);
                 } else {
-                    throw new Error(`Estado desconocido: ${data.status}`);
+                    // Rechazado o anulado
+                    setStatus("error");
+                    setErrorDetails(`Estado del pago: ${paymentStatus || "desconocido"}`);
                 }
             } catch (err: any) {
+                console.error("Error al verificar pago:", err);
                 setStatus("error");
-                setErrorDetails(err.message ?? "Error desconocido");
+                setErrorDetails(err.message || "Error desconocido");
             }
         }
+
         verificar();
     }, [searchParams]);
 
@@ -116,7 +140,6 @@ function ConfirmacionContent() {
                         </div>
                     </div>
                 )}
-
                 <div className="flex gap-3 justify-center">
                     <Link href="/menu" className="bg-brand px-6 py-3 rounded-md text-white">
                         Seguir comprando
@@ -139,7 +162,7 @@ export default function ConfirmacionPage() {
                     <h1 className="text-2xl font-bold mb-2">Cargando...</h1>
                 </div>
             </main>
-            }>
+        }>
             <ConfirmacionContent />
         </Suspense>
     );
