@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       subject,
       email,
       urlConfirmation: `${baseUrl}/api/flow/confirm`,
-      urlReturn: `${baseUrl}/confirmacion`
+      urlReturn: `${baseUrl}/api/flow/return`
     };
 
     const s = sign(params);

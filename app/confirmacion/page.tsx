@@ -11,11 +11,24 @@ function ConfirmacionContent() {
 
     useEffect(() => {
         const token = searchParams.get("token");
-        console.log("🔑 Token recibido:", token);
-
+        const error = searchParams.get("error");
+        
+        console.log("Token recibido:", token);
+        console.log("Error:", error);
+        
+        if (error) {
+            setStatus("error");
+            setErrorDetails(
+            error === "no-token" 
+                ? "El token no llegó desde Flow" 
+                : "Error del servidor"
+            );
+            return;
+        }
+        
         if (!token) {
             setStatus("error");
-            setErrorDetails("El token no llegó desde Flow");
+            setErrorDetails("No se recibió token de Flow");
             return;
         }
 
