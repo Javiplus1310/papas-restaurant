@@ -24,9 +24,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const urlConfirmation = `${baseUrl}/api/flow/confirm`;
-    const urlReturn = `${baseUrl}/confirmacion`;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
+    const urlConfirmation = `${baseUrl}/api/flow/confirm`; 
+    const urlReturn = `${baseUrl}/confirmacion`; 
 
     const params: Record<string, string> = {
       apiKey,
@@ -42,9 +42,7 @@ export async function POST(request: NextRequest) {
       .sort()
       .map(key => `${key}${params[key]}`)
       .join('');
-    
-    console.log('String para firma:', paramsString);
-    
+
     const signature = crypto
       .createHmac('sha256', secretKey)
       .update(paramsString)
@@ -52,23 +50,17 @@ export async function POST(request: NextRequest) {
 
     params.s = signature;
 
-    console.log('Parámetros enviados a Flow:', { ...params, secretKey: 'HIDDEN' });
-    console.log('Firma generada:', signature);
-
     const formBody = new URLSearchParams(params);
-    
     const response = await fetch(`${apiUrl}/payment/create`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formBody.toString(),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Error de Flow:', data);
+      console.error('❌ Error de Flow create:', data);
       return NextResponse.json(
         { error: 'Error al crear orden en Flow', details: data },
         { status: response.status }
@@ -77,16 +69,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      url: data.url,
+      redirect: data.url,
       token: data.token,
       flowOrder: data.flowOrder,
     });
 
   } catch (error) {
-    console.error('Error en create-order:', error);
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    );
+    console.error('❌ Error en create-order:', error);
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
 }

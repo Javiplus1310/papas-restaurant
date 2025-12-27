@@ -11,51 +11,38 @@ function ConfirmacionContent() {
 
     useEffect(() => {
         const token = searchParams.get("token");
-        console.log("Token recibido:", token);
-        
+        console.log("🔑 Token recibido:", token);
+
         if (!token) {
             setStatus("error");
-            setErrorDetails("No se recibió token de Flow");
+            setErrorDetails("El token no llegó desde Flow");
             return;
         }
 
-        async function verifyPayment() {
+        async function verificar() {
             try {
-                console.log("Verificando pago con token:", token);
-                const response = await fetch(`/api/flow/confirm?token=${token}`, {
-                    method: "GET",
-                });
+                const res = await fetch(`/api/flow/confirm?token=${token}`);
+                const data = await res.json();
 
-                const data = await response.json();
-                console.log("Respuesta de confirmación:", data);
+                console.log("🧾 Respuesta backend:", data);
 
-                if (data.success) {
-                    if (data.status === 2) {
-                        setStatus("success");
-                        setOrderInfo(data);
+                if (!data.success) throw new Error(data.error);
 
-                        if (typeof window !== "undefined") {
-                            localStorage.removeItem("cart_v1");
-                        }
-
-                    } else if (data.status === 1) {
-                        setTimeout(() => verifyPayment(), 1500);
-                    } else {
-                        setStatus("error");
-                        setErrorDetails(`Estado del pago: ${data.status}`);
-                    }
+                if (data.status === 2) {
+                    setStatus("success");
+                    setOrderInfo(data);
+                    localStorage.removeItem("cart_v1");
+                } else if (data.status === 1) {
+                    setTimeout(verificar, 2000);
                 } else {
-                    setStatus("error");
-                    setErrorDetails(data.error || "Error desconocido al confirmar");
+                    throw new Error(`Estado desconocido: ${data.status}`);
                 }
-
-            } catch (error: any) {
-                console.error("Error al verificar pago:", error);
+            } catch (err: any) {
                 setStatus("error");
-                setErrorDetails(error.message || "Error desconocido");
+                setErrorDetails(err.message ?? "Error desconocido");
             }
         }
-        verifyPayment();
+        verificar();
     }, [searchParams]);
 
     if (status === "loading") {
