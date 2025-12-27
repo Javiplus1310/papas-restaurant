@@ -32,28 +32,31 @@ export default function CarritoPage() {
     try {
       const orderId = `ORDER-${Date.now()}`;
       const subject = cart.map((p: CartItem) => `${p.name} x${p.qty}`).join(", ");
+
       const response = await fetch("/api/flow/create-order", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: total,
           orderId,
-          subject: subject.substring(0, 140), 
-          email: "javidx_13@hotmail.cl", 
+          subject: subject.substring(0, 140)
         }),
       });
 
       const data = await response.json();
+      console.log("Respuesta Flow:", data);
 
-      if (!response.ok) {
-        throw new Error(data.error || "Error al crear la orden");
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error?.message ||
+          data.error ||
+          "Error al crear la orden con Flow"
+        );
       }
 
-      const paymentUrl = data.url || data.redirect;
-      if (!paymentUrl) throw new Error("Flow no devolvió URL de pago");
-      window.location.href = paymentUrl;
+      // URL final correcta
+      const redirectUrl = `${data.redirect}?token=${data.token}`;
+      window.location.href = redirectUrl;
 
     } catch (err: any) {
       console.error("Error en checkout:", err);
