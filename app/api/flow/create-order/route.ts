@@ -6,7 +6,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { amount, orderId, subject, email } = body;
 
-    // Validaciones básicas
     if (!amount || !orderId || !subject) {
       return NextResponse.json(
         { error: 'Faltan parámetros requeridos' },
@@ -25,23 +24,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // URLs de retorno (ajusta según tu dominio)
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const urlConfirmation = `${baseUrl}/api/flow/confirm`;
-    const urlReturn = `${baseUrl}/confirmacion`;
+    const urlReturn = `${baseUrl}/confirmacion?token=$token`;
 
-    // Parámetros para Flow
     const params: Record<string, string> = {
       apiKey,
       commerceOrder: orderId,
       subject,
       amount: amount.toString(),
-      email: email || 'javidx_13@hotmail.cl', // Email obligatorio en Flow
+      email: email || 'javidx_13@hotmail.cl',
       urlConfirmation,
       urlReturn,
     };
 
-    // Generar firma (s)
     const paramsString = Object.keys(params)
       .sort()
       .map(key => `${key}${params[key]}`)
@@ -59,7 +55,6 @@ export async function POST(request: NextRequest) {
     console.log('Parámetros enviados a Flow:', { ...params, secretKey: 'HIDDEN' });
     console.log('Firma generada:', signature);
 
-    // Hacer petición a Flow
     const formBody = new URLSearchParams(params);
     
     const response = await fetch(`${apiUrl}/payment/create`, {
@@ -80,7 +75,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Flow devuelve: { url, token, flowOrder }
     return NextResponse.json({
       success: true,
       url: data.url,
