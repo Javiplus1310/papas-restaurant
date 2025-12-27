@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const urlConfirmation = `${baseUrl}/api/flow/confirm`;
-    const urlReturn = `${baseUrl}/confirmacion?token=$token`;
+    const urlReturn = `${baseUrl}/confirmacion`;
 
     const params: Record<string, string> = {
       apiKey,
