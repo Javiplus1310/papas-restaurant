@@ -3,23 +3,22 @@ import crypto from "crypto";
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
-
-  if (!token) {
-    return NextResponse.json({ success: false, error: "Falta token" }, { status: 400 });
-  }
+  if (!token) return NextResponse.json({ error: "Falta token" }, { status: 400 });
 
   const apiKey = process.env.FLOW_API_KEY!;
   const secretKey = process.env.FLOW_SECRET_KEY!;
   const apiUrl = process.env.FLOW_API_URL!;
 
-  const params = { apiKey, token };
+  const paramsToSign = { apiKey, token } as Record<string, string>;;
 
-  const signature = crypto
-    .createHmac("sha256", secretKey)
-    .update(`apiKey${apiKey}token${token}`)
-    .digest("hex");
+  const toSign = Object.keys(paramsToSign)
+    .sort()
+    .map(key => `${key}=${paramsToSign[key]}`)
+    .join("&");
 
-  const body = new URLSearchParams({ ...params, s: signature });
+  const s = crypto.createHmac("sha256", secretKey).update(toSign).digest("hex");
+
+  const body = new URLSearchParams({ apiKey, token, s });
 
   const resp = await fetch(`${apiUrl}/payment/getStatus`, {
     method: "POST",
@@ -28,20 +27,5 @@ export async function GET(req: NextRequest) {
   });
 
   const data = await resp.json();
-  console.log("📩 Respuesta Flow:", data);
-
-  if (!resp.ok || !data?.status) {
-    return NextResponse.json(
-      { success: false, error: "No se pudo validar pago", details: data },
-      { status: 400 }
-    );
-  }
-
-  return NextResponse.json({
-    success: true,
-    status: data.status,
-    commerceOrder: data.commerceOrder,
-    amount: data.amount,
-    flowData: data,
-  });
+  return NextResponse.json({ success: true, data });
 }
