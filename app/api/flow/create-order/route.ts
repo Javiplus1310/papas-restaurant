@@ -6,9 +6,9 @@ function sign(params: Record<string, string>) {
   
   const toSign = Object.keys(params)
     .sort()
-    .map(key => `${key}=${params[key]}`)
-    .join("&");
-
+    .map(key => `${key}${params[key]}`)
+    .join("");
+  
   return crypto
     .createHmac("sha256", secretKey)
     .update(toSign)
@@ -18,7 +18,7 @@ function sign(params: Record<string, string>) {
 export async function POST(req: Request) {
   try {
     const { amount, orderId, subject, email } = await req.json();
-
+    
     if (!amount || !orderId || !subject || !email) {
       return NextResponse.json(
         { error: "Faltan parámetros (amount, orderId, subject, email)" },
@@ -26,7 +26,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const baseUrl = process.env.BASE_URL!;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://papas-restaurant.vercel.app";
+    
     const params = {
       apiKey: process.env.FLOW_API_KEY!,
       amount: amount.toString(),
@@ -38,9 +39,9 @@ export async function POST(req: Request) {
     };
 
     const s = sign(params);
-
     const body = new URLSearchParams({ ...params, s });
 
+    // Corregido: paréntesis en lugar de backticks
     const res = await fetch(`${process.env.FLOW_API_URL}/payment/create`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -49,19 +50,20 @@ export async function POST(req: Request) {
 
     const data = await res.json();
 
-    if (data.code !== 200) {
-      return NextResponse.json({ error: data }, { status: 500 });
+    if (!res.ok || data.code) {
+      console.error("Error de Flow:", data);
+      return NextResponse.json({ error: data.message || "Error en Flow" }, { status: 500 });
     }
 
-    const { token, url } = data.data;
     return NextResponse.json({
       success: true,
-      redirect: url,
-      token,
-      flowOrder: data.data.flowOrder
+      url: data.url,
+      token: data.token,
+      flowOrder: data.flowOrder
     });
 
   } catch (err: any) {
+    console.error("Error en create-order:", err);
     return NextResponse.json(
       { error: err.message || "Error desconocido" },
       { status: 500 }

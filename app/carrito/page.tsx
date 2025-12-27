@@ -56,8 +56,8 @@ export default function CarritoPage() {
       }
 
       // URL final correcta
-      const redirectUrl = `${data.redirect}?token=${data.token}`;
-      window.location.href = redirectUrl;
+      window.location.href = `${data.url}?token=${data.token}`;
+
 
     } catch (err: any) {
       console.error("Error en checkout:", err);
